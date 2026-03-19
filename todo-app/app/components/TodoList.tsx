@@ -1,34 +1,29 @@
 "use client";
 
-import { Todo, FilterType } from "../types/todo";
-import TodoItem from "./TodoItem";
+import { Schedule } from "../types/todo";
+import ScheduleItem from "./TodoItem";
 
-interface TodoListProps {
-  todos: Todo[];
-  filter: FilterType;
+interface ScheduleListProps {
+  schedules: Schedule[];
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export default function TodoList({ todos, filter, onToggle, onDelete }: TodoListProps) {
-  const filtered = todos.filter((t) => {
-    if (filter === "active") return !t.completed;
-    if (filter === "completed") return t.completed;
-    return true;
-  });
+export default function ScheduleList({ schedules, onToggle, onDelete }: ScheduleListProps) {
+  const sorted = [...schedules].sort((a, b) => a.time.localeCompare(b.time));
 
-  if (filtered.length === 0) {
+  if (sorted.length === 0) {
     return (
-      <div className="py-12 text-center text-sm text-gray-400 dark:text-gray-600">
-        {filter === "completed" ? "완료된 항목이 없습니다." : "할 일이 없습니다. 새 항목을 추가해보세요!"}
+      <div className="py-10 text-center text-sm text-gray-400 dark:text-gray-600">
+        이 날의 일정이 없습니다. 새 일정을 추가해보세요!
       </div>
     );
   }
 
   return (
     <ul className="flex flex-col gap-2">
-      {filtered.map((todo) => (
-        <TodoItem key={todo.id} todo={todo} onToggle={onToggle} onDelete={onDelete} />
+      {sorted.map((schedule) => (
+        <ScheduleItem key={schedule.id} schedule={schedule} onToggle={onToggle} onDelete={onDelete} />
       ))}
     </ul>
   );
