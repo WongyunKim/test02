@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: todo-app
 
     steps:
       - name: Checkout code
@@ -22,9 +25,7 @@ jobs:
           cache-dependency-path: todo-app/package-lock.json
 
       - name: Install dependencies
-        working-directory: todo-app
         run: npm ci
 
       - name: Build
-        working-directory: todo-app
         run: npm run build
