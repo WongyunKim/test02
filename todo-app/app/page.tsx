@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Schedule, Priority } from "./types/todo";
 import Calendar from "./components/Calendar";
 import ScheduleInput from "./components/TodoInput";
 import ScheduleList from "./components/TodoList";
+
+async function sendEmail(type: "added" | "reminder", schedule: Schedule) {
+  await fetch("/api/send-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, schedule }),
+  });
+}
 
 function toDateStr(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -19,6 +27,7 @@ export default function Home() {
   const today = toDateStr(new Date());
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedDate, setSelectedDate] = useState(today);
+  const notifiedIds = useRef<Set<string>>(new Set());
 
   const addSchedule = (title: string, date: string, time: string, priority: Priority) => {
     const newSchedule: Schedule = {
@@ -31,7 +40,25 @@ export default function Home() {
     };
     setSchedules((prev) => [newSchedule, ...prev]);
     setSelectedDate(date);
+    sendEmail("added", newSchedule);
   };
+
+  // 1시간 전 알림: 매 분마다 일정을 확인
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      schedules.forEach((schedule) => {
+        if (schedule.completed || notifiedIds.current.has(schedule.id)) return;
+        const scheduleTime = new Date(`${schedule.date}T${schedule.time}:00`);
+        const diffMins = Math.round((scheduleTime.getTime() - now.getTime()) / 60000);
+        if (diffMins >= 59 && diffMins <= 61) {
+          notifiedIds.current.add(schedule.id);
+          sendEmail("reminder", schedule);
+        }
+      });
+    }, 60000);
+    return () => clearInterval(timer);
+  }, [schedules]);
 
   const toggleSchedule = (id: string) => {
     setSchedules((prev) =>
